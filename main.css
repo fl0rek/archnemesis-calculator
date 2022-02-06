@@ -1,0 +1,7 @@
+.monster {
+    width: 10em;
+}
+
+.greyed-out {
+    filter: grayscale(1);
+}
