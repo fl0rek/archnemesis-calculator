@@ -1,7 +1,21 @@
 .monster {
-    width: 10em;
+    width: 5em;
 }
 
 .greyed-out {
     filter: grayscale(1);
+}
+
+button:not(.greyed-out) {
+    background-color: lightgreen
+}
+
+.recipe {
+    display: flex;
+    justify-content: left;
+}
+
+#___recipes {
+    display: flex;
+    justify-content: left;
 }
