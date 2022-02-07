@@ -1,307 +1,197 @@
-$("#one").text("two");
++ function (document, window, undefined) {
+    document.owned = {};
 
-document.owned = {};
+    document.safename = function(name) {
+        return name
+                .replace("-", "")
+                .replace(" ", "");
+    }
 
-var droppable =
-    [
-        "Toxic",
-        "Chaosweaver",
-        "Frostweaver",
-        "Permafrost",
-        "Hasted",
-        "Deadeye",
-        "Bombardier",
-        "Flameweaver",
-        "Incendiary",
-        "Arcane Buffer",
-        "Echoist",
-        "Stormweaver",
-        "Dynamo",
-        "Bonebreaker",
-        "Bloodletter",
-        "Steel-infused",
-        "Gargantuan",
-        "Berserker",
-        "Sentinel",
-        "Juggernaut",
-        "Vampiric",
-        "Overcharged",
-        "Soul Conduit",
-        "Opulent",
-        "Malediction",
-        "Consecrator",
-        "Frenzied"
-    ];
+    document.filename = function (monster) {
+        return "rsc/" +
+            monster
+                .replace(" - ", "-")
+                .replace(" ", "-")
+            + ".png";
+    }
 
-var craftable =
-    [
-        "Heralding Minions",
-        "Empowering Minions",
-        "Assassin",
-        "Trickster",
-        "Necromancer",
-        "Rejuvenating",
-        "Executioner",
-        "Hexer",
-        "Drought Bringer",
-        "Entangler",
-        "Temporal Bubble",
-        "Treant Horde",
-        "Frost Strider",
-        "Ice Prison",
-        "Soul Eater",
-        "Flame Strider",
-        "Corpse Detonator",
-        "Evocationist",
-        "Magma Barrier",
-        "Mirror Image",
-        "Storm Strider",
-        "Mana Siphoner",
-        "Corrupter",
-        "Invulnerable",
-        "Crystal - skinned",
-        "Empowered Elements",
-        "Effigy",
-        "Lunaris - touched",
-        "Solaris - touched",
-        "Arakaali - touched",
-        "Brine King - touched",
-        "Tukohama - touched",
-        "Abberath - touched",
-        "Shakari - touched",
-        "Innocence - touched",
-        "Kitava - touched",
-    ]
-
-
-var droppable_container = [];
-droppable.forEach(element => {
-    var icon_name = element.replace(" ", "-") + ".png"
-    var icon = $("<img>", { src: "rsc/" + icon_name });
-    var markup_droppable = $("<p>", { text: element });
-    droppable_container.push($("<button>", {
-        class: "monster greyed-out",
-        html: [icon, markup_droppable],
-        data: {
-            present: false,
-            monster: element
+    document.update_recipes = function (recipes) {
+        $("#recipes").html([]);
+        for (var recipe in recipes) {
+            var ingredients = recipes[recipe];
+            var ingredient_missing = false;
+            for (var i = 0; i < ingredients.length; i++) {
+                if (!document.owned[ingredients[i]]) {
+                    ingredient_missing = true;
+                }
+            }
+            if (!ingredient_missing) {
+                console.log(recipe, ":")
+                console.log("> ", ingredients);
+                var recipe = $("<li>", {
+                    html: document.get_recipe(recipe, ingredients)
+                });
+                console.log(recipe);
+                $("#recipes").append(recipe);
+            }
         }
-    }));
-});
+    }
 
-var craftable_container = [];
-craftable.forEach(element => {
-    var icon_name = element
-        .replace(" - ", "-")
-        .replace(" ", "-")
-        + ".png";
-    var icon = $("<img>", { src: "rsc/" + icon_name });
-    var markup_craftable = $("<p>", { text: element });
-    craftable_container.push($("<button>", {
-        class: "monster greyed-out",
-        html: [icon, markup_craftable],
-        data: {
-            present: false,
-            monster: element
+    document.get_icon = function (monster) {
+        var icon = $("<div>", {
+            class: "monster",
+            html: [
+                $("<img>", {
+                    src: document.filename(monster)
+                }),
+                $("<p>", {
+                    text: monster
+                })
+            ]
+        });
+
+        return icon;
+    }
+
+    document.get_recipe = function (product, ingredients) {
+        var product_icon = document.get_icon(product);
+        var ingredients_icon = [];
+        for (var i = 0; i < ingredients.length; i++) {
+            ingredients_icon.push(document.get_icon(ingredients[i]));
         }
-    }));
-});
 
-var maxlen = Math.max(craftable_container.length, droppable_container.length);
-for (let i = 0; i < maxlen; i++) {
-    droppable = droppable_container[i];
-    craftable = craftable_container[i];
+        ingredients_icon.push($("<div>", {
+            text: " => "
+        }));
 
-    if (!droppable) {
-        droppable = $("<p>");
+        ingredients_icon.push(product_icon);
+
+        return $("<div>", {
+            class: "recipe",
+            html: ingredients_icon
+        });
+
     }
-    if (!craftable) {
-        craftable = $("<p>")
+    document.save_state = function() {
+        var state = JSON.stringify(document.owned);
+        localStorage.setItem('state', state);
     }
 
-    var row = $("<tr>")
-        .append(
-            $("<td>", { class: "monster" }).append(droppable)
-        ).append(
-            $("<td>", { class: "monster" }).append(craftable)
-        )
-
-    $("table#inventory tbody").append(row);
-}
-
-$("button.monster").click(element => {
-    var target = element.currentTarget;
-    //console.log(element);
-    //$(target).prop("readonly", true);
-    var got_monster = !$(target).data("present");
-    $(target).data("present", got_monster);
-    console.log(got_monster);
-
-
-    var name = $(target).data("monster");
-    if (got_monster) {
-
-        $(target).removeClass("greyed-out");
-        $(target).removeClass("greyed-out");
-
-        document.owned[name] = true;
-    } else {
-        $(target).addClass("greyed-out");
-        document.owned[name] = false;
+    document.load_state = function() {
+        var state_string = localStorage.getItem('state');
+        var state = JSON.parse(state_string);
+        document.owned = state;
+        document.owned_to_display();
+        document.update_recipes(document.data.recipes);
     }
-})
+
+    document.owned_to_display = function() {
+        $('button.monster:not(.greyed-out)').addClass('greyed-out');
+        for (var key in document.owned) {
+            if (document.owned[key]) {
+                console.log(key);
+                var button_id = document.safename(key);
+                var button = $("#" + button_id);
+                button.removeClass('greyed-out');
+                console.log(button);
+            }
+        }
+    }
 
 
-var recipes = {
-    'Heralding Minions': [
-        'Dynamo',
-        'Arcane Buffer'
-    ],
-
-    'Empowering Minions': [
-        'Necromancer', 'Executioner', 'Gargantuan'
-    ],
-
-    'Assassin': [
-        'Deadeye', 'Vampiric'
-    ],
-
-    'Trickster': [
-        'Overcharged', 'Assassin', 'Echoist'
-    ],
-
-    'Necromancer': [
-        'Bombardier', 'Overcharged'
-    ],
-
-    'Rejuvenating': [
-        'Gargantuan', 'Vampiric'
-    ],
-
-    'Executioner': [
-        'Frenzied', 'Berserker'
-    ],
-
-    'Hexer': [
-        'Chaosweaver', 'Echoist'
-    ],
-
-    'Drought Bringer': [
-        'Malediction', 'Deadeye'
-    ],
-
-    'Entangler': [
-        'Toxic', 'Bloodletter'
-    ],
-
-    'Temporal Bubble': [
-        'Juggernaut', 'Hexer', 'Arcane Buffer'
-    ],
-
-    'Treant Horde': [
-        'Toxic', 'Sentinel', 'Steel-infused'
-    ],
-
-    'Frost Strider': [
-        'Frostweaver', ' Hasted',
-    ],
-
-    'Ice Prison': [
-        'Permafrost', ' Sentinel',
-    ],
-
-    'Soul Eater': [
-        'Soul Conduit', ' Necromancer', ' Gargantuan',
-    ],
-
-    'Flame Strider': [
-        'Flameweaver', ' Hasted',
-    ],
-
-    'Corpse Detonator': [
-        'Necromancer', ' Incendiary',
-    ],
-
-    'Evocationist': [
-        'Flameweaver', ' Frostweaver', ' Stormweaver',
-    ],
-
-    'Magma Barrier': [
-        'Incendiary', ' Bonebreaker',
-    ],
-
-    'Mirror Image': [
-        'Echoist', ' Soul Conduit',
-    ],
-
-    'Storm Strider': [
-        'Stormweaver', ' Hasted',
-    ],
-
-    'Mana Siphoner': [
-        'Consecrator', ' Dynamo',
-    ],
-
-    'Corrupter': [
-        'Bloodletter', ' Chaosweaver',
-    ],
-
-    'Invulnerable': [
-        'Sentinel', ' Juggernaut', ' Consecrator',
-    ],
-
-    'Crystal-skinned': [
-        'Permafrost', ' Rejuvenating', ' Berserker',
-    ],
-
-    'Empowered Elements': [
-        'Evocationist', ' Steel-infused', ' Chaosweaver',
-    ],
-
-    'Effigy': [
-        'Hexer', ' Malediction', ' Corrupter',
-    ],
-
-    'Lunaris-touched': [
-        'Invulnerable', ' Frost Strider', ' Empowering Minions',
-    ],
-
-    'Solaris-touched': [
-        'Invulnerable', ' Magma Barrier', ' Empowering Minions',
-    ],
-
-    'Arakaali-touched': [
-        'Corpse Detonator', ' Entangler', ' Assassin',
-    ],
-
-    'Brine King-touched': [
-        'Ice Prison', ' Storm Strider', ' Heralding Minions',
-    ],
-
-    'Tukohama-touched': [
-        'Bonebreaker', ' Executioner', ' Magma Barrier',
-    ],
-
-    'Abberath-touched': [
-        'Flame Strider', ' Frenzied', ' Rejuvenating',
-    ],
-
-    'Shakari-touched': [
-        'Entangler', ' Soul Eater', ' Drought Bringer',
-    ],
-
-    'Innocence-touched': [
-        'Lunaris-touched', ' Solaris-touched', ' Mirror Image', ' Mana Siphoner',
-    ],
-
-    'Kitava-touched': [
-        'Tukohama-touched', ' Abberath-touched', ' Corrupter', ' Corpse Detonator',
-    ]
-}
+    var monster_button_click = element => {
+        var target = element.currentTarget;
+        console.log(element);
+        var name = $(target).data("monster");
+        var got_monster = !document.owned[name];
+        //!$(target).data("present");
+        
+        $(target).data("present", got_monster);
+        console.log(got_monster);
 
 
-for (var k in recipes) {
+        if (got_monster) {
 
-    console.log(k, " => ", recipes[k]);
-    
-}
+            $(target).removeClass("greyed-out");
+            $(target).removeClass("greyed-out");
+
+            document.owned[name] = true;
+        } else {
+            $(target).addClass("greyed-out");
+            document.owned[name] = false;
+        }
+
+        document.update_recipes(document.data.recipes);
+        document.save_state()
+    };
+
+    var droppable = document.data.droppable;
+    droppable.forEach(element => {
+        var icon_name = document.filename(element)
+        var icon = $("<img>", { src: icon_name });
+        var markup_droppable = $("<p>", { text: element });
+
+        var droppable_button = $("<button>", {
+            id: document.safename(element),
+            class: "monster greyed-out",
+            html: [icon, markup_droppable],
+            data: {
+                present: false,
+                monster: element
+            },
+            click: monster_button_click,
+        });
+        $('#droppable').append($('<td>', {
+            class: 'monster',
+            html: droppable_button
+        }));
+    });
+
+    var craftable = document.data.craftable;
+    craftable.forEach(element => {
+        var icon_name = document.filename(element);
+        var icon = $("<img>", { src: icon_name });
+        var markup_craftable = $("<p>", { text: element });
+
+        var craftable_button = $("<button>", {
+            id: document.safename(element),
+            class: "monster greyed-out",
+            html: [icon, markup_craftable],
+            data: {
+                present: false,
+                monster: element
+            },
+            click: monster_button_click,
+        });
+        $('#craftable').append($('<td>', {
+            class: 'monster',
+            html: craftable_button
+        }));
+    });
+
+    /*
+    var maxlen = Math.max(craftable_container.length, droppable_container.length);
+    for (let i = 0; i < maxlen; i++) {
+        droppable = droppable_container[i];
+        craftable = craftable_container[i];
+
+        if (!droppable) {
+            droppable = $("<p>");
+        }
+        if (!craftable) {
+            craftable = $("<p>")
+        }
+
+        var row = $("<tr>")
+            .append(
+                $("<td>", { class: "monster" }).append(droppable)
+            ).append(
+                $("<td>", { class: "monster" }).append(craftable)
+            )
+
+        $("table#inventory tbody").append(row);
+    }
+    */
+
+    document.load_state();
+}(document, document.window);
