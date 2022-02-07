@@ -1,3 +1,4 @@
+document.owned = {};
 + function (document, window, undefined) {
     document.owned = {};
 
